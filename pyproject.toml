@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "psi4-ligands"
+version = "0.1.0"
+description = "Binding energy workflow for protein/ligand with Psi4"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "affinra"}]
+
+dependencies = [
+  "numpy>=1.24,<2",
+  "scipy>=1.10",
+  "biopython>=1.81",
+  "rdkit-pypi>=2022.9.5",
+]
+
+[project.optional-dependencies]
+
+dev = [
+  "pytest>=7.4",
+  "ruff>=0.4",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+psi4-ligands = "psi4_ligands.cli:main"
