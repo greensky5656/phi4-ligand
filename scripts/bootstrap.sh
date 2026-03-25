@@ -8,22 +8,32 @@ BUILD_DIR="${BUILD_DIR:-$ROOT/build/psi4}"
 INSTALL_DIR="${INSTALL_DIR:-$ROOT/local/psi4}"
 JOBS="${JOBS:-4}"
 
+print_macos_prereq_hint() {
+  cat <<'EOF' >&2
+Install prerequisites on macOS with Homebrew:
+  brew install python@3.11 cmake gcc libomp pkgconf
+EOF
+}
+
 if [[ ! -x "$PYTHON_BIN" ]]; then
   if command -v python3.11 >/dev/null 2>&1; then
     PYTHON_BIN="$(command -v python3.11)"
   else
     echo "python3.11 is required. Set PYTHON_BIN or install Python 3.11." >&2
+    print_macos_prereq_hint
     exit 1
   fi
 fi
 
 if ! command -v cmake >/dev/null 2>&1; then
   echo "cmake is required." >&2
+  print_macos_prereq_hint
   exit 1
 fi
 
 if ! command -v gfortran >/dev/null 2>&1; then
   echo "gfortran is required." >&2
+  print_macos_prereq_hint
   exit 1
 fi
 
@@ -50,8 +60,10 @@ else
   cat <<EOF
 
 Skipping tblite install because libomp was not found.
-For GFN-xTB support on Homebrew-based macOS installs:
-  brew install libomp pkgconf
+For GFN-xTB support on Homebrew-based macOS installs, first run:
+  brew install python@3.11 cmake gcc libomp pkgconf
+
+Then install tblite into the repo venv with:
   export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
   export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
   export PKG_CONFIG_PATH="/opt/homebrew/opt/libomp/lib/pkgconfig"
