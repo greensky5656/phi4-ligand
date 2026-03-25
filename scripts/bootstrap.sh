@@ -40,6 +40,25 @@ fi
   psutil \
   py-cpuinfo \
   rdkit-pypi
+
+if [[ -d /opt/homebrew/opt/libomp ]]; then
+  export LDFLAGS="-L/opt/homebrew/opt/libomp/lib ${LDFLAGS:-}"
+  export CPPFLAGS="-I/opt/homebrew/opt/libomp/include ${CPPFLAGS:-}"
+  export PKG_CONFIG_PATH="/opt/homebrew/opt/libomp/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  "$VENV_DIR/bin/python" -m pip install tblite
+else
+  cat <<EOF
+
+Skipping tblite install because libomp was not found.
+For GFN-xTB support on Homebrew-based macOS installs:
+  brew install libomp pkgconf
+  export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
+  export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
+  export PKG_CONFIG_PATH="/opt/homebrew/opt/libomp/lib/pkgconfig"
+  $VENV_DIR/bin/python -m pip install tblite
+EOF
+fi
+
 "$VENV_DIR/bin/python" -m pip install -e "$ROOT" --no-deps
 
 CXX_FLAGS="${CXX_FLAGS:-}"
@@ -76,4 +95,7 @@ Use Psi4 from this repo with:
 
 If you need to override the local Psi4 location:
   export PSI4_PYTHONPATH="$INSTALL_DIR/lib"
+
+For GFN-xTB support, ensure tblite is present in the repo venv:
+  $VENV_DIR/bin/python -m pip show tblite
 EOF
