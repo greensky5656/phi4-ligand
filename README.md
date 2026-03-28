@@ -57,6 +57,14 @@ Equivalent wrapper script:
   --ligand-sdf samples/B49_ligandl.sdf
 ```
 
+Benchmark batch run:
+
+```bash
+.venv311/bin/python scripts/run_benchmarks.py
+```
+
+This writes `samples/benchmarks/benchmark_report.tsv` and `samples/benchmarks/benchmark_report.md`.
+
 ## Notes
 
 - Psi4 is vendored in this repo under `vendor/psi4`.

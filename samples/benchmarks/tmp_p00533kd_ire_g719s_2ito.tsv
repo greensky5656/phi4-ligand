@@ -1,0 +1,2 @@
+run	selected_residues	selected_atoms	cap_atoms	protein_charge	ligand_charge	complex_charge	ligand_rotors	docking_affinity_kcal_mol	e_complex_kcal_mol	e_protein_kcal_mol	e_ligand_kcal_mol	dE_bind_kcal_mol	entropy_penalty_kcal_mol	interaction_scale	dG_bind_kcal_mol
+p00533kd_ire_g719s_2ito-cb7bd10e047f	63	661	156	3	0	3	9	-6.97	-1003728.2098323482	-945572.1858020525	-58082.19695566529	-73.82707463032038	13.2	0.35	-12.639476120612134
