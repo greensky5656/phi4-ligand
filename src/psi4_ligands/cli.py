@@ -7,14 +7,16 @@ import sys
 
 from .binding import (
     binding_energy,
+    estimate_binding_free_energy,
+    estimate_entropy_penalty_kcal_mol,
     infer_ligand_formal_charge,
+    infer_ligand_rotatable_bonds,
     infer_protein_fragment_charge,
     load_ligand_coords,
     load_protein_coords,
     select_protein_box,
 )
-
-HARTREE_TO_KCAL_MOL = 627.509474
+from .binding import HARTREE_TO_KCAL_MOL
 
 
 def _parse_charge_argument(value: str) -> str | int:
@@ -86,6 +88,29 @@ def _build_parser() -> argparse.ArgumentParser:
         "--xtb-alpb-state",
         help="Optional ALPB solution state for xTB methods, for example bar1mol or reference",
     )
+    parser.add_argument(
+        "--interaction-scale",
+        type=float,
+        default=0.35,
+        help="Scale factor that compresses the raw interaction energy before dG estimation (default: 0.35)",
+    )
+    parser.add_argument(
+        "--entropy-penalty-kcal-mol",
+        type=float,
+        help="Override the entropy penalty used in the dG estimate in kcal/mol (default: auto from ligand rotatable bonds)",
+    )
+    parser.add_argument(
+        "--entropy-base-kcal-mol",
+        type=float,
+        default=6.0,
+        help="Base entropy penalty used when --entropy-penalty-kcal-mol is not set (default: 6.0)",
+    )
+    parser.add_argument(
+        "--entropy-per-rotor-kcal-mol",
+        type=float,
+        default=0.8,
+        help="Additional entropy penalty per ligand rotatable bond when --entropy-penalty-kcal-mol is not set (default: 0.8)",
+    )
     return parser
 
 
@@ -125,6 +150,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         ligand_charge = args.ligand_charge
 
+    ligand_rotatable_bonds = infer_ligand_rotatable_bonds(args.ligand_sdf)
+
     if args.complex_charge in (None, "auto"):
         complex_charge = protein_charge + ligand_charge
     else:
@@ -144,6 +171,21 @@ def main(argv: list[str] | None = None) -> int:
         xtb_alpb_state=args.xtb_alpb_state,
     )
 
+    if args.entropy_penalty_kcal_mol is None:
+        entropy_penalty_kcal_mol = estimate_entropy_penalty_kcal_mol(
+            ligand_rotatable_bonds,
+            base_penalty_kcal_mol=args.entropy_base_kcal_mol,
+            per_rotor_penalty_kcal_mol=args.entropy_per_rotor_kcal_mol,
+        )
+    else:
+        entropy_penalty_kcal_mol = args.entropy_penalty_kcal_mol
+
+    delta_g_bind = estimate_binding_free_energy(
+        delta,
+        interaction_scale=args.interaction_scale,
+        entropy_penalty_kcal_mol=entropy_penalty_kcal_mol,
+    )
+
     if selected_residues is not None:
         print(f"Selected residues: {len(selected_residues)}")
         print(f"Selected atoms   : {len(protein_coords)}")
@@ -153,16 +195,19 @@ def main(argv: list[str] | None = None) -> int:
         f"Charges        : protein={protein_charge}, ligand={ligand_charge}, "
         f"complex={complex_charge}"
     )
+    print(f"Ligand rotors  : {ligand_rotatable_bonds}")
     if args.xtb_alpb_solvent:
         print(
             f"xTB solvent    : ALPB {args.xtb_alpb_solvent}"
             + (f" ({args.xtb_alpb_state})" if args.xtb_alpb_state else "")
         )
-    print("Model note     : relative local interaction score, not a binding free energy")
+    print("Model note     : heuristic dG_bind estimate derived from the local interaction energy")
     print(f"E_complex: {e_complex * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
     print(f"E_protein: {e_protein * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
     print(f"E_ligand : {e_ligand * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
-    print(f"Score    : {delta * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
+    print(f"dE_bind  : {delta * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
+    print(f"dG terms : scale={args.interaction_scale:.3f}, entropy={entropy_penalty_kcal_mol:.2f} kcal/mol")
+    print(f"dG_bind  : {delta_g_bind * HARTREE_TO_KCAL_MOL:.2f} kcal/mol")
     return 0
 
 

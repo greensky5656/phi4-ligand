@@ -35,6 +35,20 @@ GFN2-xTB example with a ligand-centered `4 A` protein box:
   --threads 1
 ```
 
+Example with explicit `dG_bind` tuning:
+
+```bash
+.venv311/bin/python -m psi4_ligands.cli \
+  --protein-pdb samples/B49_receptor.pdb \
+  --ligand-sdf samples/B49_ligandl.sdf \
+  --method gfn2-xtb \
+  --box-padding-angstroms 4 \
+  --xtb-alpb-solvent water \
+  --interaction-scale 0.35 \
+  --entropy-base-kcal-mol 6.0 \
+  --entropy-per-rotor-kcal-mol 0.8
+```
+
 Equivalent wrapper script:
 
 ```bash
@@ -65,4 +79,6 @@ GFN-xTB support:
 - Boxed protein fragments are capped by default with backbone-based ACE/NME-style caps.
 - Capping can be disabled with `--no-cap-box-residues` or `./scripts/run_score.sh --no-cap`.
 - Protein and ligand charges default to `auto` for CLI runs.
-- The reported `Score` is a relative local interaction score, not a binding free energy.
+- `dE_bind` is the raw local interaction energy.
+- `dG_bind` is a heuristic estimate computed from the interaction energy with a compression factor and an entropy penalty.
+- The default entropy penalty is `6.0 + 0.8 * N_rotatable_bonds` kcal/mol, but it can be overridden from the CLI.

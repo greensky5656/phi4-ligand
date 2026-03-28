@@ -11,6 +11,10 @@ from typing import Iterable, List, Sequence, Tuple
 from Bio.PDB import PDBParser
 import numpy as np
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
+
+HARTREE_TO_KCAL_MOL = 627.509474
 
 
 def _guess_element(name: str) -> str:
@@ -228,6 +232,14 @@ def infer_ligand_formal_charge(sdf_path: str) -> int:
     if mol is None:
         raise ValueError(f"No valid molecule found in {sdf_path}")
     return int(Chem.GetFormalCharge(mol))
+
+
+def infer_ligand_rotatable_bonds(sdf_path: str) -> int:
+    supplier = Chem.SDMolSupplier(sdf_path, sanitize=True, removeHs=False)
+    mol = next((m for m in supplier if m is not None), None)
+    if mol is None:
+        raise ValueError(f"No valid molecule found in {sdf_path}")
+    return int(rdMolDescriptors.CalcNumRotatableBonds(mol))
 
 
 def load_protein_coords(pdb_path: str) -> List[AtomCoord]:
@@ -638,3 +650,26 @@ def binding_energy(
 
     delta = e_complex - (e_protein + e_ligand)
     return e_complex, e_protein, e_ligand, delta
+
+
+def estimate_binding_free_energy(
+    interaction_energy_hartree: float,
+    interaction_scale: float = 0.35,
+    entropy_penalty_kcal_mol: float = 10.0,
+) -> float:
+    if interaction_scale < 0:
+        raise ValueError("Interaction scale must be non-negative")
+    return (
+        interaction_energy_hartree * interaction_scale
+        + entropy_penalty_kcal_mol / HARTREE_TO_KCAL_MOL
+    )
+
+
+def estimate_entropy_penalty_kcal_mol(
+    ligand_rotatable_bonds: int,
+    base_penalty_kcal_mol: float = 6.0,
+    per_rotor_penalty_kcal_mol: float = 0.8,
+) -> float:
+    if ligand_rotatable_bonds < 0:
+        raise ValueError("Rotatable bond count must be non-negative")
+    return base_penalty_kcal_mol + per_rotor_penalty_kcal_mol * ligand_rotatable_bonds

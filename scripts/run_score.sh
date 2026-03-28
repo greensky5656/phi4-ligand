@@ -26,6 +26,10 @@ Options:
   --cap                           Cap boxed residue cuts (default: on)
   --no-cap                        Disable capping for boxed residue cuts
   --basis NAME                    Basis for non-xTB methods (default: 6-31g*)
+  --interaction-scale FLOAT       Compression factor for the dG estimate (default: 0.35)
+  --entropy-penalty FLOAT         Explicit entropy penalty in kcal/mol
+  --entropy-base FLOAT            Base entropy penalty for auto mode (default: 6.0)
+  --entropy-per-rotor FLOAT       Added entropy penalty per rotatable bond (default: 0.8)
   --python-bin FILE               Python interpreter to use (default: .venv311/bin/python)
   -h, --help                      Show this help
 
@@ -49,6 +53,10 @@ solvent="water"
 solvent_state=""
 cap_mode="on"
 basis="6-31g*"
+interaction_scale="0.35"
+entropy_penalty=""
+entropy_base="6.0"
+entropy_per_rotor="0.8"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -108,6 +116,22 @@ while [[ $# -gt 0 ]]; do
       basis="$2"
       shift 2
       ;;
+    --interaction-scale)
+      interaction_scale="$2"
+      shift 2
+      ;;
+    --entropy-penalty)
+      entropy_penalty="$2"
+      shift 2
+      ;;
+    --entropy-base)
+      entropy_base="$2"
+      shift 2
+      ;;
+    --entropy-per-rotor)
+      entropy_per_rotor="$2"
+      shift 2
+      ;;
     --python-bin)
       PYTHON_BIN="$2"
       shift 2
@@ -141,6 +165,9 @@ cli_args=(
   --ligand-charge "$ligand_charge"
   --complex-charge "$complex_charge"
   --multiplicity "$multiplicity"
+  --interaction-scale "$interaction_scale"
+  --entropy-base-kcal-mol "$entropy_base"
+  --entropy-per-rotor-kcal-mol "$entropy_per_rotor"
 )
 
 if [[ "$cap_mode" == "on" ]]; then
@@ -155,6 +182,10 @@ fi
 
 if [[ -n "$solvent_state" ]]; then
   cli_args+=(--xtb-alpb-state "$solvent_state")
+fi
+
+if [[ -n "$entropy_penalty" ]]; then
+  cli_args+=(--entropy-penalty-kcal-mol "$entropy_penalty")
 fi
 
 exec "$PYTHON_BIN" "${cli_args[@]}"
